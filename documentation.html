@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Garbage Collection Management System — Technical Documentation</title>
+<style>
+  body {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #111;
+    margin: 2.5cm 3cm;
+  }
+  h1 { font-size: 22pt; color: #1a1a2e; margin-bottom: 4pt; }
+  h2 { font-size: 16pt; color: #16213e; border-bottom: 2px solid #16213e; padding-bottom: 4pt; margin-top: 28pt; }
+  h3 { font-size: 13pt; color: #0f3460; margin-top: 18pt; margin-bottom: 4pt; }
+  h4 { font-size: 11pt; color: #333; margin-top: 12pt; margin-bottom: 2pt; font-style: italic; }
+  p  { margin: 6pt 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10pt 0;
+    font-size: 10pt;
+  }
+  th {
+    background-color: #16213e;
+    color: #fff;
+    padding: 6pt 8pt;
+    text-align: left;
+  }
+  td { padding: 5pt 8pt; border: 1pt solid #ccc; vertical-align: top; }
+  tr:nth-child(even) td { background-color: #f4f4f4; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background: #f0f0f0;
+    padding: 1pt 4pt;
+    border-radius: 3pt;
+    font-size: 9.5pt;
+  }
+  pre {
+    background: #f0f0f0;
+    border-left: 4pt solid #16213e;
+    padding: 8pt 12pt;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 9pt;
+    white-space: pre-wrap;
+    margin: 8pt 0;
+  }
+  ul, ol { margin: 6pt 0 6pt 20pt; }
+  li { margin: 3pt 0; }
+  .cover {
+    text-align: center;
+    padding: 80pt 0 60pt;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 28pt; margin-bottom: 8pt; }
+  .cover .subtitle { font-size: 14pt; color: #555; margin-bottom: 40pt; }
+  .cover .meta { font-size: 10pt; color: #777; }
+  .toc li { list-style: none; margin: 4pt 0; }
+  .toc a { color: #16213e; text-decoration: none; }
+  .badge {
+    display: inline-block;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    font-size: 9pt;
+    font-weight: bold;
+  }
+  .badge-get    { background: #d1fae5; color: #065f46; }
+  .badge-post   { background: #dbeafe; color: #1e40af; }
+  .badge-put    { background: #fef3c7; color: #92400e; }
+  .badge-delete { background: #fee2e2; color: #991b1b; }
+  .note {
+    background: #fffbeb;
+    border-left: 4pt solid #f59e0b;
+    padding: 6pt 10pt;
+    margin: 8pt 0;
+    font-size: 10pt;
+  }
+  .section-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <h1>Garbage Collection Management System</h1>
+  <p class="subtitle">Technical Documentation &amp; Developer Reference</p>
+  <p class="meta">
+    Version: 1.0<br/>
+    Date: May 2026<br/>
+    Framework: Next.js 16 (App Router) &bull; TypeScript &bull; PostgreSQL<br/>
+    Payment Integration: Safaricom M-Pesa Daraja API
+  </p>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<h2>Table of Contents</h2>
+<ol class="toc">
+  <li>1. <a href="#overview">System Overview</a></li>
+  <li>2. <a href="#tech">Technology Stack</a></li>
+  <li>3. <a href="#structure">Project Structure</a></li>
+  <li>4. <a href="#database">Database Schema</a></li>
+  <li>5. <a href="#auth">Authentication &amp; Security</a></li>
+  <li>6. <a href="#api">API Reference</a>
+    <ul>
+      <li>6.1 Auth Endpoints</li>
+      <li>6.2 Buildings</li>
+      <li>6.3 Customers</li>
+      <li>6.4 Payments</li>
+      <li>6.5 M-Pesa (STK Push &amp; Callback)</li>
+      <li>6.6 Dashboard</li>
+      <li>6.7 Reports</li>
+    </ul>
+  </li>
+  <li>7. <a href="#pages">Frontend Pages</a></li>
+  <li>8. <a href="#components">Shared Components</a></li>
+  <li>9. <a href="#mpesa">M-Pesa Integration</a></li>
+  <li>10. <a href="#env">Environment Variables</a></li>
+  <li>11. <a href="#deploy">Deployment Guide</a></li>
+  <li>12. <a href="#known">Known Limitations &amp; Future Work</a></li>
+</ol>
+
+<!-- 1. OVERVIEW -->
+<div class="section-break"></div>
+<h2 id="overview">1. System Overview</h2>
+<p>
+  The <strong>Garbage Collection Management System</strong> is a full-stack web application built for property managers who collect monthly garbage fees from tenants. It replaces manual paper-based records with a centralised digital system.
+</p>
+<h3>Core Features</h3>
+<ul>
+  <li><strong>Buildings management</strong> — register and manage multiple properties</li>
+  <li><strong>Customer management</strong> — track tenants per building with their room number and monthly fee</li>
+  <li><strong>Payments tracking</strong> — record payments month by month with full history</li>
+  <li><strong>M-Pesa STK Push</strong> — send payment prompts directly to a tenant's phone via Safaricom Daraja API</li>
+  <li><strong>Manual reference entry</strong> — record payments made outside the system using an M-Pesa transaction code</li>
+  <li><strong>Dashboard</strong> — at-a-glance statistics for the current month</li>
+  <li><strong>Per-building reports</strong> — printable monthly collection summaries</li>
+  <li><strong>Authentication</strong> — username/password login with session cookies; self-service first-run registration</li>
+</ul>
+
+<h3>Typical Workflow</h3>
+<ol>
+  <li>Admin logs in to the system.</li>
+  <li>Admin adds buildings and registers customers under each building.</li>
+  <li>At the start of the month, admin opens the Payments page, selects the current month, and sends STK Push requests to tenants with unpaid status.</li>
+  <li>When a tenant pays, M-Pesa calls the callback URL and the system automatically marks the payment as paid.</li>
+  <li>Alternatively, admin manually enters the M-Pesa reference code for a tenant who paid directly.</li>
+  <li>Admin generates a building-level report to review collection status and prints it.</li>
+</ol>
+
+<!-- 2. TECHNOLOGY STACK -->
+<h2 id="tech">2. Technology Stack</h2>
+<table>
+  <tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>Framework</td><td>Next.js 16.2.6 (App Router)</td><td>Full-stack React framework — handles routing, server components, and API routes</td></tr>
+  <tr><td>Language</td><td>TypeScript 5</td><td>Type safety across frontend and backend</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS 4</td><td>Utility-first CSS framework</td></tr>
+  <tr><td>Icons</td><td>lucide-react</td><td>Icon set used throughout the UI</td></tr>
+  <tr><td>Database</td><td>PostgreSQL (via <code>pg</code> driver)</td><td>Relational data store for buildings, customers, payments, and users</td></tr>
+  <tr><td>Payments</td><td>Safaricom Daraja API v1</td><td>M-Pesa Lipa Na M-Pesa Online (STK Push)</td></tr>
+  <tr><td>Auth</td><td>Custom — Web Crypto API + PBKDF2</td><td>HMAC-signed session tokens, PBKDF2-hashed passwords (no external auth library)</td></tr>
+  <tr><td>Runtime</td><td>Node.js 24</td><td>Server runtime</td></tr>
+  <tr><td>Build tool</td><td>Turbopack (Next.js bundler)</td><td>Fast development builds</td></tr>
+</table>
+
+<!-- 3. PROJECT STRUCTURE -->
+<h2 id="structure">3. Project Structure</h2>
+<pre>
+garbagefrontend/
+├── app/                          # Next.js App Router root
+│   ├── layout.tsx                # Root layout — wraps all pages with AppShell
+│   ├── page.tsx                  # Redirects "/" → "/dashboard"
+│   ├── globals.css               # Global Tailwind styles
+│   │
+│   ├── login/page.tsx            # Login page (public)
+│   ├── register/page.tsx         # First-run registration page (public)
+│   ├── dashboard/page.tsx        # Dashboard — queries DB directly (server component)
+│   ├── buildings/page.tsx        # Buildings CRUD page (client component)
+│   ├── customers/
+│   │   ├── page.tsx              # Wraps CustomersPage in Suspense
+│   │   └── CustomersPage.tsx     # Customers CRUD + payment status (client component)
+│   ├── payments/
+│   │   ├── page.tsx              # Wraps PaymentsPage
+│   │   └── PaymentsPage.tsx      # Payments management — STK Push + manual ref (client)
+│   ├── reports/page.tsx          # Per-building printable report (client component)
+│   │
+│   └── api/                      # API Route Handlers
+│       ├── auth/
+│       │   ├── login/route.ts    # POST /api/auth/login
+│       │   ├── logout/route.ts   # POST /api/auth/logout
+│       │   └── register/route.ts # POST /api/auth/register
+│       ├── buildings/
+│       │   ├── route.ts          # GET, POST /api/buildings
+│       │   └── [id]/route.ts     # PUT, DELETE /api/buildings/:id
+│       ├── customers/
+│       │   ├── route.ts          # GET, POST /api/customers
+│       │   └── [id]/route.ts     # PUT, DELETE /api/customers/:id
+│       ├── payments/
+│       │   ├── route.ts          # GET, POST /api/payments
+│       │   └── [id]/route.ts     # PATCH, DELETE /api/payments/:id
+│       ├── mpesa/
+│       │   ├── stk-push/route.ts # POST /api/mpesa/stk-push
+│       │   └── callback/route.ts # POST /api/mpesa/callback  (Safaricom webhook)
+│       ├── dashboard/route.ts    # GET /api/dashboard
+│       └── reports/route.ts      # GET /api/reports
+│
+├── components/                   # Shared React components
+│   ├── AppShell.tsx              # Mobile-responsive layout shell + hamburger menu
+│   ├── Sidebar.tsx               # Navigation sidebar with sign-out
+│   ├── StatCard.tsx              # Metric card for dashboard
+│   ├── Modal.tsx                 # Accessible modal dialog
+│   └── StatusBadge.tsx           # Paid / Unpaid / Partial badge
+│
+├── lib/                          # Server-side utilities
+│   ├── db.ts                     # PostgreSQL connection pool + query helper
+│   ├── auth.ts                   # Session tokens (HMAC) + password hashing (PBKDF2)
+│   ├── mpesa.ts                  # Daraja API helpers — access token + STK Push
+│   ├── schema.sql                # Database schema (run once to initialise)
+│   └── types.ts                  # Shared TypeScript interfaces
+│
+├── middleware.ts                 # Next.js Edge middleware — session-based route protection
+├── scripts/migrate.js            # One-off DB migration script
+├── .env.local                    # Environment variables (not committed to git)
+├── next.config.ts
+├── tsconfig.json
+└── package.json
+</pre>
+
+<!-- 4. DATABASE SCHEMA -->
+<div class="section-break"></div>
+<h2 id="database">4. Database Schema</h2>
+<p>The schema is defined in <code>lib/schema.sql</code>. Run this file once against your PostgreSQL instance before starting the application.</p>
+
+<h3>4.1 buildings</h3>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+  <tr><td>id</td><td>SERIAL PRIMARY KEY</td><td>Auto-increment identifier</td></tr>
+  <tr><td>name</td><td>TEXT NOT NULL</td><td>Building name, e.g. "Sunrise Apartments"</td></tr>
+  <tr><td>location</td><td>TEXT NOT NULL</td><td>Physical address or area, e.g. "Westlands, Nairobi"</td></tr>
+  <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>Record creation timestamp</td></tr>
+</table>
+
+<h3>4.2 customers</h3>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+  <tr><td>id</td><td>SERIAL PRIMARY KEY</td><td>Auto-increment identifier</td></tr>
+  <tr><td>full_name</td><td>TEXT NOT NULL</td><td>Tenant's full name</td></tr>
+  <tr><td>phone_number</td><td>TEXT NOT NULL</td><td>Phone number (stored as entered, normalised to 2547XXXXXXXX at payment time)</td></tr>
+  <tr><td>building_id</td><td>INTEGER REFERENCES buildings(id)</td><td>Foreign key — cascades on delete</td></tr>
+  <tr><td>room_number</td><td>TEXT NOT NULL</td><td>Room or unit identifier, e.g. "A3"</td></tr>
+  <tr><td>monthly_fee</td><td>NUMERIC(10,2)</td><td>Monthly garbage fee in KES</td></tr>
+  <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>Record creation timestamp</td></tr>
+</table>
+
+<h3>4.3 payments</h3>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+  <tr><td>id</td><td>SERIAL PRIMARY KEY</td><td>Auto-increment identifier</td></tr>
+  <tr><td>customer_id</td><td>INTEGER REFERENCES customers(id)</td><td>Foreign key — cascades on delete</td></tr>
+  <tr><td>month</td><td>SMALLINT (1–12)</td><td>Month the payment covers</td></tr>
+  <tr><td>year</td><td>SMALLINT</td><td>Year the payment covers</td></tr>
+  <tr><td>amount</td><td>NUMERIC(10,2)</td><td>Amount paid in KES</td></tr>
+  <tr><td>method</td><td>TEXT</td><td><code>stk_push</code> or <code>manual_reference</code></td></tr>
+  <tr><td>mpesa_reference</td><td>TEXT</td><td>M-Pesa transaction code (e.g. QK7BX3RT2)</td></tr>
+  <tr><td>phone_number</td><td>TEXT NOT NULL</td><td>Phone number used for this payment</td></tr>
+  <tr><td>status</td><td>TEXT</td><td><code>paid</code>, <code>unpaid</code>, or <code>partial</code></td></tr>
+  <tr><td>paid_at</td><td>TIMESTAMPTZ</td><td>Timestamp of confirmed payment</td></tr>
+  <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>Record creation timestamp</td></tr>
+</table>
+<p>A <code>UNIQUE (customer_id, month, year)</code> constraint prevents duplicate payment records for the same period.</p>
+
+<h3>4.4 users</h3>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+  <tr><td>id</td><td>SERIAL PRIMARY KEY</td><td>Auto-increment identifier</td></tr>
+  <tr><td>username</td><td>TEXT NOT NULL UNIQUE</td><td>Login username</td></tr>
+  <tr><td>password_hash</td><td>TEXT NOT NULL</td><td>PBKDF2-derived hash in format <code>salt:hash</code> (base64url encoded)</td></tr>
+  <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>Account creation timestamp</td></tr>
+</table>
+
+<!-- 5. AUTHENTICATION -->
+<div class="section-break"></div>
+<h2 id="auth">5. Authentication &amp; Security</h2>
+
+<h3>5.1 How It Works</h3>
+<p>
+  Authentication uses a custom implementation with no external libraries. It relies on the browser's Web Crypto API (available in both Edge and Node.js runtimes).
+</p>
+<ol>
+  <li>User submits username and password on <code>/login</code>.</li>
+  <li>The server queries the <code>users</code> table, retrieves the stored PBKDF2 hash, and verifies it against the submitted password.</li>
+  <li>On success, the server creates a signed session token (HMAC-SHA256) and sets it as an <code>httpOnly</code> cookie named <code>session</code>.</li>
+  <li>On every subsequent request, <code>middleware.ts</code> verifies the cookie's signature. Invalid or missing tokens are redirected to <code>/login</code>.</li>
+</ol>
+
+<h3>5.2 Password Storage</h3>
+<p>
+  Passwords are hashed using <strong>PBKDF2-SHA256 with 100,000 iterations</strong>. Each password has a unique 16-byte random salt. The stored value is:
+</p>
+<pre>base64url(salt) : base64url(derivedKey)</pre>
+<p>Verification re-derives the key with the same salt and compares using a constant-time bitwise XOR to prevent timing attacks.</p>
+
+<h3>5.3 Session Tokens</h3>
+<p>
+  The token format is <code>payload.signature</code> where payload is base64url-encoded JSON containing the username and issue timestamp. The signature is HMAC-SHA256 over the payload using the <code>SESSION_SECRET</code> environment variable.
+</p>
+
+<h3>5.4 Middleware — Route Protection</h3>
+<p>
+  <code>middleware.ts</code> runs on the Next.js Edge runtime and protects all routes. Public paths that do not require authentication:
+</p>
+<ul>
+  <li><code>/login</code></li>
+  <li><code>/register</code></li>
+  <li><code>/api/auth/login</code></li>
+  <li><code>/api/auth/register</code></li>
+  <li><code>/api/mpesa/callback</code> — must remain public for Safaricom to reach it</li>
+</ul>
+
+<h3>5.5 First-Run Registration</h3>
+<p>
+  The <code>POST /api/auth/register</code> endpoint checks whether any users exist in the database. If the <code>users</code> table is empty, registration is allowed and the first account is created. All subsequent registration attempts return <strong>403 Forbidden</strong>. This means only the first admin can register — additional accounts must be created directly in the database.
+</p>
+
+<h3>5.6 Fallback Credentials</h3>
+<p>
+  If the <code>users</code> table is empty (e.g. before first registration), the login route falls back to the <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code> environment variables. This allows access immediately after deployment before the database is set up.
+</p>
+
+<!-- 6. API REFERENCE -->
+<div class="section-break"></div>
+<h2 id="api">6. API Reference</h2>
+<p>All endpoints return JSON. Authenticated endpoints require a valid <code>session</code> cookie. All routes are under <code>/api/</code>.</p>
+
+<h3>6.1 Auth Endpoints</h3>
+
+<h4><span class="badge badge-post">POST</span> /api/auth/register</h4>
+<p>Creates the first admin account. Returns 403 if a user already exists.</p>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+  <tr><td>username</td><td>string</td><td>Yes</td><td>Min 3 characters</td></tr>
+  <tr><td>password</td><td>string</td><td>Yes</td><td>Min 8 characters</td></tr>
+</table>
+<p><strong>Success:</strong> 200, sets <code>session</code> cookie, redirects to dashboard.</p>
+
+<h4><span class="badge badge-post">POST</span> /api/auth/login</h4>
+<p>Authenticates a user and issues a session cookie.</p>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+  <tr><td>username</td><td>string</td><td>Yes</td><td></td></tr>
+  <tr><td>password</td><td>string</td><td>Yes</td><td></td></tr>
+</table>
+<p><strong>Success:</strong> 200 <code>{"ok": true}</code> + <code>session</code> cookie (httpOnly, 7-day expiry).<br/>
+<strong>Failure:</strong> 401 <code>{"error": "Invalid username or password"}</code></p>
+
+<h4><span class="badge badge-post">POST</span> /api/auth/logout</h4>
+<p>Clears the session cookie. No request body required.</p>
+
+<h3>6.2 Buildings</h3>
+
+<h4><span class="badge badge-get">GET</span> /api/buildings</h4>
+<p>Returns all buildings ordered by name.</p>
+<p><strong>Response:</strong> Array of <code>Building</code> objects.</p>
+
+<h4><span class="badge badge-post">POST</span> /api/buildings</h4>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Required</th></tr>
+  <tr><td>name</td><td>string</td><td>Yes</td></tr>
+  <tr><td>location</td><td>string</td><td>Yes</td></tr>
+</table>
+<p><strong>Success:</strong> 201, returns the created <code>Building</code>.</p>
+
+<h4><span class="badge badge-put">PUT</span> /api/buildings/:id</h4>
+<p>Updates a building's name and/or location. Same body as POST.</p>
+
+<h4><span class="badge badge-delete">DELETE</span> /api/buildings/:id</h4>
+<p>Deletes a building. All customers (and their payments) inside are cascaded-deleted by the database.</p>
+
+<h3>6.3 Customers</h3>
+
+<h4><span class="badge badge-get">GET</span> /api/customers</h4>
+<p>Returns all customers, optionally filtered by building.</p>
+<table>
+  <tr><th>Query Param</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>building_id</td><td>number</td><td>Optional — filter to a specific building</td></tr>
+</table>
+<p>The query JOINs with <code>buildings</code> so each customer object includes <code>building_name</code>.</p>
+
+<h4><span class="badge badge-post">POST</span> /api/customers</h4>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Required</th></tr>
+  <tr><td>full_name</td><td>string</td><td>Yes</td></tr>
+  <tr><td>phone_number</td><td>string</td><td>Yes</td></tr>
+  <tr><td>building_id</td><td>number</td><td>Yes</td></tr>
+  <tr><td>room_number</td><td>string</td><td>Yes</td></tr>
+  <tr><td>monthly_fee</td><td>number</td><td>Yes</td></tr>
+</table>
+
+<h4><span class="badge badge-put">PUT</span> /api/customers/:id</h4>
+<p>Updates all fields. Same body as POST.</p>
+
+<h4><span class="badge badge-delete">DELETE</span> /api/customers/:id</h4>
+<p>Deletes a customer and all their payment records (cascaded by DB).</p>
+
+<h3>6.4 Payments</h3>
+
+<h4><span class="badge badge-get">GET</span> /api/payments</h4>
+<p>Returns payments filtered by month and year, with optional building filter.</p>
+<table>
+  <tr><th>Query Param</th><th>Type</th><th>Required</th></tr>
+  <tr><td>month</td><td>number (1–12)</td><td>Yes</td></tr>
+  <tr><td>year</td><td>number</td><td>Yes</td></tr>
+  <tr><td>building_id</td><td>number</td><td>No</td></tr>
+</table>
+<p>Results include <code>customer_name</code>, <code>building_name</code>, and <code>room_number</code> via JOIN.</p>
+
+<h4><span class="badge badge-post">POST</span> /api/payments</h4>
+<p>Creates or updates a manual payment record (upsert on <code>customer_id, month, year</code>).</p>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>customer_id</td><td>number</td><td>Required</td></tr>
+  <tr><td>month</td><td>number</td><td>Required</td></tr>
+  <tr><td>year</td><td>number</td><td>Required</td></tr>
+  <tr><td>amount</td><td>number</td><td>Required</td></tr>
+  <tr><td>method</td><td>string</td><td>Required — <code>manual_reference</code></td></tr>
+  <tr><td>mpesa_reference</td><td>string</td><td>M-Pesa transaction code</td></tr>
+  <tr><td>phone_number</td><td>string</td><td>Required</td></tr>
+  <tr><td>status</td><td>string</td><td>Required — <code>paid</code>, <code>unpaid</code>, or <code>partial</code></td></tr>
+</table>
+
+<h4><span class="badge badge-put">PATCH</span> /api/payments/:id</h4>
+<p>Updates status and/or mpesa_reference of an existing payment.</p>
+
+<h4><span class="badge badge-delete">DELETE</span> /api/payments/:id</h4>
+<p>Deletes a single payment record.</p>
+
+<h3>6.5 M-Pesa Endpoints</h3>
+
+<h4><span class="badge badge-post">POST</span> /api/mpesa/stk-push</h4>
+<p>Triggers an STK Push (payment prompt) to the customer's phone and creates a pending payment record.</p>
+<table>
+  <tr><th>Body Field</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>customer_id</td><td>number</td><td>Required</td></tr>
+  <tr><td>month</td><td>number</td><td>Required</td></tr>
+  <tr><td>year</td><td>number</td><td>Required</td></tr>
+</table>
+<p>
+  The handler fetches the customer record, normalises the phone number to <code>2547XXXXXXXX</code> format, calls <code>initiateStkPush()</code> from <code>lib/mpesa.ts</code>, then inserts a payment row with <code>status='unpaid'</code> using <code>ON CONFLICT DO NOTHING</code>.
+</p>
+<p><strong>Success:</strong> 200, returns Daraja's <code>StkPushResult</code> containing <code>CheckoutRequestID</code>.</p>
+
+<h4><span class="badge badge-post">POST</span> /api/mpesa/callback</h4>
+<p>
+  Webhook endpoint called by Safaricom after the customer enters their PIN. This route is intentionally <strong>not protected by authentication</strong> — it must be publicly accessible for Safaricom's servers to reach it.
+</p>
+<p>On a successful payment (<code>ResultCode === 0</code>), it extracts <code>MpesaReceiptNumber</code>, <code>Amount</code>, and <code>PhoneNumber</code> from the callback metadata and updates the most recent pending <code>stk_push</code> payment for that phone number to <code>status='paid'</code>.</p>
+<p>Always responds with <code>{"ResultCode": 0, "ResultDesc": "Accepted"}</code> to satisfy Safaricom's expectation.</p>
+
+<h3>6.6 Dashboard</h3>
+
+<h4><span class="badge badge-get">GET</span> /api/dashboard</h4>
+<p>Returns aggregate statistics for the current calendar month. The dashboard <em>page</em> queries the database directly and does not call this endpoint — it is available for external integrations.</p>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td>total_buildings</td><td>Total number of buildings</td></tr>
+  <tr><td>total_customers</td><td>Total number of registered customers</td></tr>
+  <tr><td>total_collected_this_month</td><td>Sum of payments with <code>status='paid'</code> for the current month</td></tr>
+  <tr><td>total_expected_this_month</td><td>Sum of all customers' <code>monthly_fee</code></td></tr>
+  <tr><td>num_paid_this_month</td><td>Count of customers who have a paid payment this month</td></tr>
+</table>
+
+<h3>6.7 Reports</h3>
+
+<h4><span class="badge badge-get">GET</span> /api/reports</h4>
+<p>Returns a detailed payment report for a specific building and month.</p>
+<table>
+  <tr><th>Query Param</th><th>Required</th></tr>
+  <tr><td>building_id</td><td>Yes</td></tr>
+  <tr><td>month</td><td>Yes</td></tr>
+  <tr><td>year</td><td>Yes</td></tr>
+</table>
+<p>
+  <strong>Response shape:</strong>
+</p>
+<pre>
+{
+  rows: [
+    {
+      id, full_name, room_number, monthly_fee, phone_number,
+      paid_amount, status, mpesa_reference, paid_at, method
+    },
+    ...
+  ],
+  summary: {
+    total_expected, total_collected, outstanding,
+    num_paid, num_unpaid
+  }
+}
+</pre>
+
+<!-- 7. FRONTEND PAGES -->
+<div class="section-break"></div>
+<h2 id="pages">7. Frontend Pages</h2>
+
+<h3>7.1 Login — <code>/login</code></h3>
+<p>Clean centered card with username/password fields and a show/hide password toggle. On successful authentication, redirects to <code>/dashboard</code>. Includes a link to the registration page.</p>
+
+<h3>7.2 Register — <code>/register</code></h3>
+<p>
+  First-run account setup page. Features:
+</p>
+<ul>
+  <li>Password strength indicator (Weak / Fair / Good / Strong) based on length, casing, digits, and special characters</li>
+  <li>Confirm password field with a live checkmark when passwords match</li>
+  <li>Automatically logs in and redirects to dashboard on success</li>
+  <li>If a user already exists in the DB, the API returns 403 and a clear error message is shown</li>
+</ul>
+
+<h3>7.3 Dashboard — <code>/dashboard</code></h3>
+<p>
+  A Next.js Server Component. Queries the database directly (no HTTP fetch) and renders six <code>StatCard</code> components in a responsive 3-column grid:
+</p>
+<ul>
+  <li>Total Buildings</li>
+  <li>Total Customers</li>
+  <li>Collected This Month (KES)</li>
+  <li>Expected This Month (KES)</li>
+  <li>Outstanding (KES) — difference between expected and collected</li>
+  <li>Customers Paid — count with fraction of total</li>
+</ul>
+
+<h3>7.4 Buildings — <code>/buildings</code></h3>
+<p>Client component. Displays all buildings as cards in a 2-column grid. Each card shows the building name, location, and a link to view customers filtered to that building. Supports Add, Edit, and Delete via modal forms.</p>
+
+<h3>7.5 Customers — <code>/customers</code></h3>
+<p>Client component. Displays a table of all customers with their current month's payment status. Can be filtered by building. Supports Add, Edit, and Delete. Links from the Buildings page pre-filter to a specific building via the <code>?building_id</code> query parameter.</p>
+
+<h3>7.6 Payments — <code>/payments</code></h3>
+<p>
+  The most feature-rich page. Displays a table of all customers for the selected month/year/building, with each customer's payment details.
+</p>
+<p>Two actions are available per customer:</p>
+<ul>
+  <li>
+    <strong>STK Push</strong> — opens a confirmation modal and, on confirm, calls <code>POST /api/mpesa/stk-push</code>. The customer receives a payment prompt on their phone within seconds.
+  </li>
+  <li>
+    <strong>Enter Reference</strong> — opens a form modal to record a payment that was made outside the system. The admin enters the M-Pesa transaction code, amount, and phone number.
+  </li>
+</ul>
+
+<h3>7.7 Reports — <code>/reports</code></h3>
+<p>
+  Allows the admin to select a building, month, and year to generate a collection report. Displays a summary row of stats (KES collected, outstanding, count paid/unpaid) and a detailed table per customer.
+</p>
+<p>A <strong>Print</strong> button triggers <code>window.print()</code>. The UI uses <code>print:hidden</code> Tailwind classes to hide controls and show only the report table when printing.</p>
+
+<!-- 8. COMPONENTS -->
+<h2 id="components">8. Shared Components</h2>
+
+<h3>AppShell — <code>components/AppShell.tsx</code></h3>
+<p>
+  Client component that wraps all authenticated pages. On screens wider than 768px (Tailwind <code>md</code> breakpoint), the sidebar is always visible. On mobile, the sidebar is hidden off-screen and a top bar with a hamburger menu button slides it in as an overlay with a dark backdrop.
+</p>
+<p>The login page is detected by <code>usePathname()</code> and rendered without the shell (no sidebar or top bar).</p>
+
+<h3>Sidebar — <code>components/Sidebar.tsx</code></h3>
+<p>Dark slate (<code>bg-slate-900</code>) navigation sidebar. Active links are highlighted with <code>bg-slate-700</code>. The active route is detected using exact match or <code>startsWith(href + '/')</code> to avoid false positives. Includes a Sign Out button at the bottom that calls <code>POST /api/auth/logout</code> and redirects to <code>/login</code>.</p>
+
+<h3>StatCard — <code>components/StatCard.tsx</code></h3>
+<p>White card with a coloured icon badge, a large bold value, a label, and an optional sub-text. Accepts a <code>lucide-react</code> icon, icon colour class, and icon background class as props.</p>
+
+<h3>Modal — <code>components/Modal.tsx</code></h3>
+<p>Accessible modal dialog. Closes on Escape key press or clicking the dark backdrop. Renders in a portal-like fixed overlay with <code>z-50</code>.</p>
+
+<h3>StatusBadge — <code>components/StatusBadge.tsx</code></h3>
+<p>Pill badge showing payment status. Three variants: <code>paid</code> (green), <code>unpaid</code> (red), <code>partial</code> (yellow).</p>
+
+<!-- 9. MPESA -->
+<div class="section-break"></div>
+<h2 id="mpesa">9. M-Pesa Integration</h2>
+
+<h3>9.1 Overview</h3>
+<p>
+  The system integrates with Safaricom's <strong>Daraja API v1</strong> using the <strong>Lipa Na M-Pesa Online</strong> (STK Push) product. This product allows a business to initiate a payment prompt on a customer's phone — the customer only needs to enter their M-Pesa PIN to complete the payment.
+</p>
+<div class="note">
+  <strong>Note:</strong> The Daraja sandbox uses test credentials. Real money is never moved in sandbox mode. To go live, update <code>MPESA_ENV=production</code> in <code>.env.local</code> and use production credentials from the Daraja portal.
+</div>
+
+<h3>9.2 Authentication Flow</h3>
+<ol>
+  <li>The system calls <code>GET /oauth/v1/generate?grant_type=client_credentials</code> on the Daraja base URL with Basic Auth (Consumer Key:Consumer Secret in base64).</li>
+  <li>Daraja returns a short-lived <code>access_token</code>.</li>
+  <li>The access token is used as a Bearer token in the STK Push request.</li>
+</ol>
+
+<h3>9.3 STK Push Request</h3>
+<p>The STK Push payload sent to <code>/mpesa/stkpush/v1/processrequest</code>:</p>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>BusinessShortCode</td><td><code>MPESA_SHORTCODE</code> env var (sandbox: 174379)</td></tr>
+  <tr><td>Password</td><td>base64(ShortCode + PassKey + Timestamp)</td></tr>
+  <tr><td>Timestamp</td><td>YYYYMMDDHHmmss — current time</td></tr>
+  <tr><td>TransactionType</td><td>CustomerPayBillOnline</td></tr>
+  <tr><td>Amount</td><td>Customer's monthly fee (rounded up with Math.ceil)</td></tr>
+  <tr><td>PartyA</td><td>Customer's phone (2547XXXXXXXX format)</td></tr>
+  <tr><td>PartyB</td><td>Business shortcode</td></tr>
+  <tr><td>PhoneNumber</td><td>Customer's phone</td></tr>
+  <tr><td>CallBackURL</td><td><code>MPESA_CALLBACK_URL</code> env var</td></tr>
+  <tr><td>AccountReference</td><td>GC-{room_number}</td></tr>
+  <tr><td>TransactionDesc</td><td>"Garbage fee {month} {year}"</td></tr>
+</table>
+
+<h3>9.4 Callback Handling</h3>
+<p>
+  When the customer completes payment, Safaricom sends a POST request to <code>MPESA_CALLBACK_URL</code> with the following structure:
+</p>
+<pre>
+{
+  "Body": {
+    "stkCallback": {
+      "MerchantRequestID": "...",
+      "CheckoutRequestID": "...",
+      "ResultCode": 0,
+      "ResultDesc": "The service request is processed successfully.",
+      "CallbackMetadata": {
+        "Item": [
+          { "Name": "Amount", "Value": 500 },
+          { "Name": "MpesaReceiptNumber", "Value": "QK7BX3RT2" },
+          { "Name": "PhoneNumber", "Value": 254712345678 }
+        ]
+      }
+    }
+  }
+}
+</pre>
+<p>
+  The callback route extracts the receipt number, amount, and phone number. It finds the most recent pending <code>stk_push</code> payment for that phone and updates it to <code>status='paid'</code> with the M-Pesa reference.
+</p>
+<p>
+  A <code>ResultCode</code> other than 0 means the customer cancelled or the payment failed — in this case the payment record remains as <code>unpaid</code>.
+</p>
+
+<h3>9.5 Important: ngrok for Local Development</h3>
+<p>
+  Safaricom's servers cannot reach <code>localhost</code>. During development, use <strong>ngrok</strong> to create a public tunnel:
+</p>
+<pre>ngrok http 3000</pre>
+<p>Copy the generated HTTPS URL and set it in <code>.env.local</code>:</p>
+<pre>MPESA_CALLBACK_URL=https://xxxx.ngrok-free.app/api/mpesa/callback</pre>
+<p>Restart the Next.js dev server whenever the ngrok URL changes (free plan generates a new URL on each restart).</p>
+
+<!-- 10. ENV VARS -->
+<h2 id="env">10. Environment Variables</h2>
+<p>Stored in <code>.env.local</code> (not committed to version control). All variables are required unless marked optional.</p>
+<table>
+  <tr><th>Variable</th><th>Example Value</th><th>Description</th></tr>
+  <tr><td>DATABASE_URL</td><td>postgresql://user:pass@host/db</td><td>PostgreSQL connection string</td></tr>
+  <tr><td>NEXT_PUBLIC_BASE_URL</td><td>http://localhost:3000</td><td>Public base URL. Set to your production domain on deployment.</td></tr>
+  <tr><td>SESSION_SECRET</td><td>a-random-32-char-string</td><td>HMAC signing key for session tokens. Must be long and random.</td></tr>
+  <tr><td>ADMIN_USERNAME</td><td>admin</td><td>Fallback username if no DB users exist yet. Optional in production.</td></tr>
+  <tr><td>ADMIN_PASSWORD</td><td>changeme123</td><td>Fallback password. Optional in production. Change before deploying.</td></tr>
+  <tr><td>MPESA_ENV</td><td>sandbox</td><td>Set to <code>production</code> for live transactions</td></tr>
+  <tr><td>MPESA_CONSUMER_KEY</td><td>(from Daraja portal)</td><td>App consumer key — must be from a Lipa Na M-Pesa Online app</td></tr>
+  <tr><td>MPESA_CONSUMER_SECRET</td><td>(from Daraja portal)</td><td>App consumer secret</td></tr>
+  <tr><td>MPESA_SHORTCODE</td><td>174379</td><td>Business shortcode (174379 for sandbox)</td></tr>
+  <tr><td>MPESA_PASSKEY</td><td>bfb279f9…</td><td>Lipa Na M-Pesa passkey (sandbox value is fixed and public)</td></tr>
+  <tr><td>MPESA_CALLBACK_URL</td><td>https://xxxx.ngrok-free.app/api/mpesa/callback</td><td>Public URL Safaricom will POST the result to</td></tr>
+</table>
+
+<!-- 11. DEPLOYMENT -->
+<div class="section-break"></div>
+<h2 id="deploy">11. Deployment Guide</h2>
+<p>The recommended free hosting stack is <strong>Vercel</strong> (application) + <strong>Neon</strong> (PostgreSQL).</p>
+
+<h3>Step 1 — Push code to GitHub</h3>
+<p>Create a GitHub repository and push the project. Ensure <code>.env.local</code> is in <code>.gitignore</code> (it is by default in Next.js projects).</p>
+
+<h3>Step 2 — Create a Neon database</h3>
+<ol>
+  <li>Sign up at <a href="https://neon.tech">neon.tech</a></li>
+  <li>Create a new project and copy the <code>DATABASE_URL</code> connection string</li>
+  <li>Open the Neon SQL editor and paste the contents of <code>lib/schema.sql</code> to create the tables</li>
+</ol>
+
+<h3>Step 3 — Deploy to Vercel</h3>
+<ol>
+  <li>Sign up at <a href="https://vercel.com">vercel.com</a></li>
+  <li>Click "Add New Project" and import your GitHub repository</li>
+  <li>Vercel will auto-detect Next.js — no build config needed</li>
+  <li>In the Environment Variables section, add all variables from the table above:
+    <ul>
+      <li>Use the Neon <code>DATABASE_URL</code></li>
+      <li>Set <code>NEXT_PUBLIC_BASE_URL</code> to <code>https://your-app.vercel.app</code></li>
+      <li>Generate a strong random <code>SESSION_SECRET</code></li>
+      <li>Set your Daraja production credentials (or sandbox for testing)</li>
+      <li>Set <code>MPESA_CALLBACK_URL</code> to <code>https://your-app.vercel.app/api/mpesa/callback</code></li>
+    </ul>
+  </li>
+  <li>Click Deploy</li>
+</ol>
+
+<h3>Step 4 — Create admin account</h3>
+<p>Visit <code>https://your-app.vercel.app/register</code> to create the first admin account. This is only possible once — subsequent visits will show "Registration is closed".</p>
+
+<h3>SSL Note</h3>
+<p>
+  Neon requires SSL. In <code>lib/db.ts</code>, the production SSL setting is currently <code>rejectUnauthorized: false</code>. For production, change this to <code>true</code> (Neon's CA is trusted by Node.js by default).
+</p>
+
+<!-- 12. KNOWN LIMITATIONS -->
+<h2 id="known">12. Known Limitations &amp; Future Work</h2>
+<table>
+  <tr><th>#</th><th>Issue</th><th>Impact</th><th>Suggested Fix</th></tr>
+  <tr>
+    <td>1</td>
+    <td>No M-Pesa callback signature verification</td>
+    <td>An attacker who knows the callback URL could POST a fake paid status</td>
+    <td>Append a secret token to the callback URL and verify it on every inbound request</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>CheckoutRequestID not stored</td>
+    <td>If a customer has multiple pending months, the callback may update the wrong record</td>
+    <td>Add a <code>checkout_request_id</code> column to payments and match on it in the callback</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>STK Push is sent before the DB record is created</td>
+    <td>If the INSERT fails, no record exists to match the callback against</td>
+    <td>Insert the pending record first, then trigger the push; delete the record if the push fails</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>No try/catch on API routes</td>
+    <td>DB errors expose stack traces in the HTTP response</td>
+    <td>Wrap each route in a try/catch that returns a generic 500 JSON response</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>paid_at set for unpaid records</td>
+    <td>paid_at is meaningless for pending payments</td>
+    <td>Only set paid_at when status transitions to 'paid'</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Single admin account only</td>
+    <td>No way to add more users via the UI</td>
+    <td>Add a Users management page accessible only when logged in</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>Reports include partial payments in numUnpaid</td>
+    <td>Summary counts are slightly inaccurate when partial payments exist</td>
+    <td>Count partial as its own category in the summary</td>
+  </tr>
+</table>
+
+</body>
+</html>
